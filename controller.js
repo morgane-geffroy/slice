@@ -23,6 +23,14 @@ let motionEnabled = false;
 let lastSent = 0;
 let socket = null;
 let socketReady = false;
+let wakeLock = null;
+let filtered = {
+  x: 0.5,
+  y: 0.5,
+  vx: 0,
+  vy: 0,
+  lastAt: performance.now(),
+};
 
 if (!session) {
   statusEl.textContent = "Session manquante. Ouvre le lien affiché sur l'écran.";
@@ -33,6 +41,11 @@ if (!session) {
 
 motionButton.addEventListener("click", enableMotion);
 calibrateButton.addEventListener("click", calibrate);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && motionEnabled) {
+    requestWakeLock();
+  }
+});
 pad.addEventListener("pointerdown", usePad);
 pad.addEventListener("pointermove", usePad);
 pad.addEventListener("pointerup", () => {
@@ -52,6 +65,8 @@ async function enableMotion() {
     if (typeof DeviceMotionEvent !== "undefined" && DeviceMotionEvent.requestPermission) {
       await DeviceMotionEvent.requestPermission().catch(() => "denied");
     }
+
+    await requestWakeLock();
 
     addEventListener("deviceorientation", (event) => {
       latestOrientation = event;
@@ -80,6 +95,7 @@ function calibrate() {
     gamma: latestOrientation.gamma || 0,
   };
   state = { ...state, x: 0.5, y: 0.5, dx: 0, dy: 0, intensity: 0, mode: "aim" };
+  filtered = { x: 0.5, y: 0.5, vx: 0, vy: 0, lastAt: performance.now() };
   statusEl.textContent = "Calibré en mode pointeur.";
 }
 
@@ -104,6 +120,9 @@ function usePad(event) {
 
 function updateMotion() {
   if (!motionEnabled || !latestOrientation) return;
+  const now = performance.now();
+  const dt = Math.min(0.05, Math.max(0.008, (now - filtered.lastAt) / 1000));
+  filtered.lastAt = now;
   const alpha = latestOrientation.alpha || 0;
   const beta = latestOrientation.beta || 0;
   const gamma = latestOrientation.gamma || 0;
@@ -112,8 +131,18 @@ function updateMotion() {
   const roll = gamma - baseline.gamma;
   const rawX = 0.5 + yaw / 42 + roll / 150;
   const rawY = 0.5 + pitch / 38;
-  const nextX = state.x + (clamp(rawX, 0, 1) - state.x) * 0.68;
-  const nextY = state.y + (clamp(rawY, 0, 1) - state.y) * 0.68;
+  const targetX = clamp(rawX, 0, 1);
+  const targetY = clamp(rawY, 0, 1);
+  const distance = Math.hypot(targetX - filtered.x, targetY - filtered.y);
+  const smoothing = clamp(0.16 + distance * 2.4, 0.18, 0.58);
+  const nextX = filtered.x + (targetX - filtered.x) * smoothing;
+  const nextY = filtered.y + (targetY - filtered.y) * smoothing;
+  const measuredVx = (nextX - filtered.x) / dt;
+  const measuredVy = (nextY - filtered.y) / dt;
+  filtered.vx += (measuredVx - filtered.vx) * 0.32;
+  filtered.vy += (measuredVy - filtered.vy) * 0.32;
+  filtered.x = nextX;
+  filtered.y = nextY;
   const acceleration = latestMotion?.accelerationIncludingGravity;
   const rotation = latestMotion?.rotationRate;
   const accelMagnitude = acceleration
@@ -124,17 +153,34 @@ function updateMotion() {
   const rotationAlpha = rotation?.alpha || 0;
   const rotationPower = Math.min(1, Math.hypot(rotationAlpha, rotationBeta, rotationGamma) / 320);
   const accelPower = Math.min(1, Math.max(0, accelMagnitude - 9.8) / 14);
-  const dx = clamp((nextX - state.x) * 8 + rotationAlpha / 220 + rotationGamma / 260, -1, 1);
-  const dy = clamp((nextY - state.y) * 8 + rotationBeta / 210, -1, 1);
+  const dx = clamp(filtered.vx * 0.18 + rotationAlpha / 260 + rotationGamma / 320, -1, 1);
+  const dy = clamp(filtered.vy * 0.18 + rotationBeta / 260, -1, 1);
+  const stillness = Math.hypot(filtered.vx, filtered.vy);
+  const stableX = stillness < 0.025 ? state.x + (nextX - state.x) * 0.12 : nextX;
+  const stableY = stillness < 0.025 ? state.y + (nextY - state.y) * 0.12 : nextY;
 
   state = {
-    x: nextX,
-    y: nextY,
+    x: stableX,
+    y: stableY,
     dx,
     dy,
     intensity: clamp(Math.hypot(dx, dy) * 0.95 + rotationPower * 0.85 + accelPower * 0.9, 0, 1),
     mode: "aim",
   };
+}
+
+async function requestWakeLock() {
+  if (!("wakeLock" in navigator)) {
+    return;
+  }
+  try {
+    wakeLock = await navigator.wakeLock.request("screen");
+    wakeLock.addEventListener("release", () => {
+      wakeLock = null;
+    });
+  } catch (error) {
+    wakeLock = null;
+  }
 }
 
 function connectSocket() {

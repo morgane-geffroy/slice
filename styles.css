@@ -29,6 +29,33 @@ body {
   width: 100vw;
 }
 
+.boot-status {
+  align-items: center;
+  background: #11140f;
+  color: #f7f1df;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  inset: 0;
+  justify-content: center;
+  padding: 24px;
+  position: fixed;
+  text-align: center;
+  z-index: 10;
+}
+
+.boot-status strong {
+  font-size: 30px;
+}
+
+.boot-status span {
+  color: rgba(247, 241, 223, 0.72);
+}
+
+.boot-status.hidden {
+  display: none;
+}
+
 .hud,
 .join {
   position: fixed;

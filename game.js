@@ -1,3 +1,5 @@
+try {
+const bootStatus = document.querySelector("#bootStatus");
 const params = new URLSearchParams(location.search);
 let session = params.get("session");
 if (!session) {
@@ -8,6 +10,9 @@ if (!session) {
 
 const canvas = document.querySelector("#game");
 const context = canvas.getContext("2d");
+if (!context) {
+  throw new Error("Canvas indisponible sur ce navigateur.");
+}
 const scoreEl = document.querySelector("#score");
 const sessionCode = document.querySelector("#sessionCode");
 const phoneUrl = document.querySelector("#phoneUrl");
@@ -23,7 +28,7 @@ let width = 0;
 let height = 0;
 let score = 0;
 let input = { x: 0.5, y: 0.5, dx: 0, dy: 0, intensity: 0, mode: "idle", at: 0 };
-let blade = { x: 0, y: 0, px: 0, py: 0, remoteX: 0.5, remoteY: 0.5 };
+let blade = { x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, remoteX: 0.5, remoteY: 0.5 };
 let fruits = [];
 let particles = [];
 let trail = [];
@@ -162,8 +167,13 @@ function updateBlade() {
   const inputAge = input.at ? Math.min(80, Date.now() - input.at) : 0;
   const predictedX = targetX + clamp(input.dx || 0, -1, 1) * inputAge * 2.1;
   const predictedY = targetY + clamp(input.dy || 0, -1, 1) * inputAge * 2.1;
-  blade.x += (predictedX - blade.x) * 0.78;
-  blade.y += (predictedY - blade.y) * 0.78;
+  const pull = input.intensity > 0.28 ? 0.62 : 0.34;
+  blade.vx += (predictedX - blade.x) * pull;
+  blade.vy += (predictedY - blade.y) * pull;
+  blade.vx *= 0.56;
+  blade.vy *= 0.56;
+  blade.x += blade.vx;
+  blade.y += blade.vy;
   const slashX = clamp(input.dx || 0, -1, 1) * width * 0.72;
   const slashY = clamp(input.dy || 0, -1, 1) * height * 0.72;
   const slashLength = Math.hypot(slashX, slashY);
@@ -314,6 +324,7 @@ function clamp(value, min, max) {
 }
 
 function frame() {
+  bootStatus?.classList.add("hidden");
   updateBlade();
   updateFruits();
   updateParticles();
@@ -326,3 +337,18 @@ function frame() {
 }
 
 frame();
+} catch (error) {
+  const bootStatus = document.querySelector("#bootStatus");
+  if (bootStatus) {
+    bootStatus.innerHTML = `<strong>Fruit Saber</strong><span>Erreur de chargement : ${escapeHtml(error.message)}</span>`;
+  }
+  console.error(error);
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
