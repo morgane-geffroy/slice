@@ -16,7 +16,7 @@ let state = {
   intensity: 0,
   mode: "pad",
 };
-let baseline = { beta: 0, gamma: 0 };
+let baseline = { alpha: 0, beta: 0, gamma: 0 };
 let latestOrientation = null;
 let latestMotion = null;
 let motionEnabled = false;
@@ -61,7 +61,7 @@ async function enableMotion() {
       latestMotion = event;
     });
 
-    statusEl.textContent = "Capteurs actifs. Calibre en position neutre.";
+    statusEl.textContent = "Capteurs actifs. Pointe le centre de l'écran puis calibre.";
     setTimeout(calibrate, 250);
   } catch (error) {
     statusEl.textContent = "Capteurs indisponibles. Utilise le pavé tactile.";
@@ -70,15 +70,17 @@ async function enableMotion() {
 
 function calibrate() {
   if (!latestOrientation) {
-    baseline = { beta: 0, gamma: 0 };
+    baseline = { alpha: 0, beta: 0, gamma: 0 };
     statusEl.textContent = "Calibration du pavé prête.";
     return;
   }
   baseline = {
+    alpha: latestOrientation.alpha || 0,
     beta: latestOrientation.beta || 0,
     gamma: latestOrientation.gamma || 0,
   };
-  statusEl.textContent = "Calibré.";
+  state = { ...state, x: 0.5, y: 0.5, dx: 0, dy: 0, intensity: 0, mode: "aim" };
+  statusEl.textContent = "Calibré en mode pointeur.";
 }
 
 function usePad(event) {
@@ -102,12 +104,16 @@ function usePad(event) {
 
 function updateMotion() {
   if (!motionEnabled || !latestOrientation) return;
+  const alpha = latestOrientation.alpha || 0;
   const beta = latestOrientation.beta || 0;
   const gamma = latestOrientation.gamma || 0;
-  const rawX = 0.5 + (gamma - baseline.gamma) / 70;
-  const rawY = 0.5 + (beta - baseline.beta) / 90;
-  const nextX = state.x + (clamp(rawX, 0, 1) - state.x) * 0.52;
-  const nextY = state.y + (clamp(rawY, 0, 1) - state.y) * 0.52;
+  const yaw = shortestAngle(alpha - baseline.alpha);
+  const pitch = beta - baseline.beta;
+  const roll = gamma - baseline.gamma;
+  const rawX = 0.5 + yaw / 42 + roll / 150;
+  const rawY = 0.5 + pitch / 38;
+  const nextX = state.x + (clamp(rawX, 0, 1) - state.x) * 0.68;
+  const nextY = state.y + (clamp(rawY, 0, 1) - state.y) * 0.68;
   const acceleration = latestMotion?.accelerationIncludingGravity;
   const rotation = latestMotion?.rotationRate;
   const accelMagnitude = acceleration
@@ -118,8 +124,8 @@ function updateMotion() {
   const rotationAlpha = rotation?.alpha || 0;
   const rotationPower = Math.min(1, Math.hypot(rotationAlpha, rotationBeta, rotationGamma) / 320);
   const accelPower = Math.min(1, Math.max(0, accelMagnitude - 9.8) / 14);
-  const dx = clamp((nextX - state.x) * 6.5 + rotationGamma / 190, -1, 1);
-  const dy = clamp((nextY - state.y) * 6.5 + rotationBeta / 190, -1, 1);
+  const dx = clamp((nextX - state.x) * 8 + rotationAlpha / 220 + rotationGamma / 260, -1, 1);
+  const dy = clamp((nextY - state.y) * 8 + rotationBeta / 210, -1, 1);
 
   state = {
     x: nextX,
@@ -127,7 +133,7 @@ function updateMotion() {
     dx,
     dy,
     intensity: clamp(Math.hypot(dx, dy) * 0.95 + rotationPower * 0.85 + accelPower * 0.9, 0, 1),
-    mode: "motion",
+    mode: "aim",
   };
 }
 
@@ -179,6 +185,10 @@ function send() {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function shortestAngle(value) {
+  return ((value + 540) % 360) - 180;
 }
 
 function tick() {
