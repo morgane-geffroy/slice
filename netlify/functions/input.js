@@ -11,6 +11,8 @@ exports.handler = async (event) => {
     const input = store.get(session) || {
       x: 0.5,
       y: 0.5,
+      dx: 0,
+      dy: 0,
       intensity: 0,
       mode: "waiting",
       at: 0,
@@ -36,6 +38,8 @@ exports.handler = async (event) => {
   const input = {
     x: clamp(Number(payload.x), 0, 1, 0.5),
     y: clamp(Number(payload.y), 0, 1, 0.5),
+    dx: clamp(Number(payload.dx), -1, 1, 0),
+    dy: clamp(Number(payload.dy), -1, 1, 0),
     intensity: clamp(Number(payload.intensity), 0, 1, 0),
     mode: String(payload.mode || "motion").slice(0, 20),
     at: Date.now(),

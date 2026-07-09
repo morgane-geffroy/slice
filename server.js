@@ -10,7 +10,7 @@ const sessions = new Map();
 function createSession() {
   const id = crypto.randomBytes(3).toString("hex").toUpperCase();
   sessions.set(id, {
-    input: { x: 0.5, y: 0.5, intensity: 0, mode: "idle", at: Date.now() },
+    input: { x: 0.5, y: 0.5, dx: 0, dy: 0, intensity: 0, mode: "idle", at: Date.now() },
     clients: new Set(),
   });
   return id;
@@ -124,6 +124,8 @@ const server = http.createServer(async (req, res) => {
     const input = {
       x: clamp(Number(body.x), 0, 1, 0.5),
       y: clamp(Number(body.y), 0, 1, 0.5),
+      dx: clamp(Number(body.dx), -1, 1, 0),
+      dy: clamp(Number(body.dy), -1, 1, 0),
       intensity: clamp(Number(body.intensity), 0, 1, 0),
       mode: String(body.mode || "motion").slice(0, 20),
       at: Date.now(),
@@ -141,6 +143,14 @@ const server = http.createServer(async (req, res) => {
     const session = getSession(sessionId);
     res.writeHead(session ? 200 : 404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ok: Boolean(session), session: sessionId }));
+    return;
+  }
+
+  if (url.pathname === "/api/input") {
+    const sessionId = url.searchParams.get("session");
+    const session = getSession(sessionId);
+    res.writeHead(session ? 200 : 404, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+    res.end(JSON.stringify(session?.input || { ok: false }));
     return;
   }
 

@@ -11,6 +11,8 @@ const calibrateButton = document.querySelector("#calibrateButton");
 let state = {
   x: 0.5,
   y: 0.5,
+  dx: 0,
+  dy: 0,
   intensity: 0,
   mode: "pad",
 };
@@ -86,6 +88,8 @@ function usePad(event) {
   state = {
     x,
     y,
+    dx: clamp(dx * 5, -1, 1),
+    dy: clamp(dy * 5, -1, 1),
     intensity: clamp(Math.hypot(dx, dy) * 9, 0, 1),
     mode: "pad",
   };
@@ -99,15 +103,27 @@ function updateMotion() {
   const gamma = latestOrientation.gamma || 0;
   const rawX = 0.5 + (gamma - baseline.gamma) / 70;
   const rawY = 0.5 + (beta - baseline.beta) / 90;
+  const nextX = state.x + (clamp(rawX, 0, 1) - state.x) * 0.34;
+  const nextY = state.y + (clamp(rawY, 0, 1) - state.y) * 0.34;
   const acceleration = latestMotion?.accelerationIncludingGravity;
-  const accelPower = acceleration
-    ? Math.min(1, Math.hypot(acceleration.x || 0, acceleration.y || 0, acceleration.z || 0) / 28)
+  const rotation = latestMotion?.rotationRate;
+  const accelMagnitude = acceleration
+    ? Math.hypot(acceleration.x || 0, acceleration.y || 0, acceleration.z || 0)
     : 0;
+  const rotationGamma = rotation?.gamma || 0;
+  const rotationBeta = rotation?.beta || 0;
+  const rotationAlpha = rotation?.alpha || 0;
+  const rotationPower = Math.min(1, Math.hypot(rotationAlpha, rotationBeta, rotationGamma) / 420);
+  const accelPower = Math.min(1, Math.max(0, accelMagnitude - 9.8) / 18);
+  const dx = clamp((nextX - state.x) * 5 + rotationGamma / 240, -1, 1);
+  const dy = clamp((nextY - state.y) * 5 + rotationBeta / 240, -1, 1);
 
   state = {
-    x: state.x + (clamp(rawX, 0, 1) - state.x) * 0.34,
-    y: state.y + (clamp(rawY, 0, 1) - state.y) * 0.34,
-    intensity: accelPower,
+    x: nextX,
+    y: nextY,
+    dx,
+    dy,
+    intensity: clamp(Math.hypot(dx, dy) * 0.8 + rotationPower * 0.7 + accelPower * 0.8, 0, 1),
     mode: "motion",
   };
 }

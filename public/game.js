@@ -21,7 +21,7 @@ controllerLink.href = controllerUrl;
 let width = 0;
 let height = 0;
 let score = 0;
-let input = { x: 0.5, y: 0.5, intensity: 0, mode: "idle", at: 0 };
+let input = { x: 0.5, y: 0.5, dx: 0, dy: 0, intensity: 0, mode: "idle", at: 0 };
 let blade = { x: 0, y: 0, px: 0, py: 0 };
 let fruits = [];
 let particles = [];
@@ -88,6 +88,8 @@ function usePointer(event) {
   input = {
     x,
     y,
+    dx: Math.max(-1, Math.min(1, (x - input.x) * 6)),
+    dy: Math.max(-1, Math.min(1, (y - input.y) * 6)),
     intensity: Math.min(1, speed * 12),
     mode: "local",
     at: Date.now(),
@@ -117,10 +119,20 @@ function pick(values) {
 function updateBlade() {
   const targetX = input.x * width;
   const targetY = input.y * height;
-  blade.px = blade.x;
-  blade.py = blade.y;
+  const previousX = blade.x;
+  const previousY = blade.y;
   blade.x += (targetX - blade.x) * 0.42;
   blade.y += (targetY - blade.y) * 0.42;
+  const slashX = clamp(input.dx || 0, -1, 1) * width * 0.72;
+  const slashY = clamp(input.dy || 0, -1, 1) * height * 0.72;
+  const slashLength = Math.hypot(slashX, slashY);
+  if (input.intensity > 0.18 && slashLength > 14) {
+    blade.px = blade.x - slashX;
+    blade.py = blade.y - slashY;
+  } else {
+    blade.px = previousX;
+    blade.py = previousY;
+  }
   const speed = Math.hypot(blade.x - blade.px, blade.y - blade.py);
   const power = Math.min(1, speed / 55 + input.intensity * 0.75);
   trail.push({ x: blade.x, y: blade.y, power, life: 1 });
@@ -136,9 +148,10 @@ function updateFruits() {
     fruit.vy += 0.22;
     fruit.rotation += fruit.spin;
 
-    const distance = distanceToSegment(fruit.x, fruit.y, blade.px, blade.py, blade.x, blade.y);
     const bladeSpeed = Math.hypot(blade.x - blade.px, blade.y - blade.py);
-    if (!fruit.sliced && distance < fruit.radius + 10 && bladeSpeed > 16) {
+    const bladePower = Math.min(1, bladeSpeed / 180 + input.intensity);
+    const distance = distanceToSegment(fruit.x, fruit.y, blade.px, blade.py, blade.x, blade.y);
+    if (!fruit.sliced && distance < fruit.radius + 12 + bladePower * 24 && (bladeSpeed > 10 || input.intensity > 0.24)) {
       sliceFruit(fruit);
     }
   }
@@ -253,6 +266,10 @@ function distanceToSegment(px, py, ax, ay, bx, by) {
   if (dx === 0 && dy === 0) return Math.hypot(px - ax, py - ay);
   const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
   return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
 }
 
 function frame() {
