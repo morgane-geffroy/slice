@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>PHONE SLICE — lame</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+</head>
+<body class="controller">
+
+  <!-- ÉTAPE 1 : code de salle -->
+  <section id="step-code" class="c-step">
+    <p class="eyebrow">phone / slice</p>
+    <h1 class="c-title">Rejoindre le dojo</h1>
+    <input id="code-input" class="code-input" type="text" inputmode="latin" autocomplete="off"
+           autocapitalize="characters" maxlength="4" placeholder="CODE">
+    <button id="join-btn" class="big-btn">Rejoindre</button>
+    <p id="join-status" class="status"></p>
+  </section>
+
+  <!-- ÉTAPE 2 : permission capteurs -->
+  <section id="step-perm" class="c-step hidden">
+    <h1 class="c-title">Réveille la lame</h1>
+    <p class="c-text">Le jeu utilise les capteurs de mouvement de ton téléphone.
+       iOS demande ton autorisation.</p>
+    <button id="perm-btn" class="big-btn">Activer les capteurs</button>
+    <p id="perm-status" class="status"></p>
+  </section>
+
+  <!-- ÉTAPE 3 : lame active -->
+  <section id="step-blade" class="c-step hidden">
+    <div class="blade-visual" id="blade-visual">⚔️</div>
+    <h1 class="c-title">Lame active</h1>
+    <p class="c-text">Pointe ton téléphone vers l'écran comme un pointeur laser,
+       puis tranche dans l'air.</p>
+    <button id="recenter-btn" class="big-btn secondary">Recentrer la lame</button>
+    <p id="blade-status" class="status">● connecté</p>
+  </section>
+
+  <script src="js/controller.js"></script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PHONE SLICE — ton téléphone est la lame</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body class="desktop">
+
+  <!-- ÉCRAN LOBBY -->
+  <section id="lobby" class="lobby">
+    <div class="lobby-inner">
+      <p class="eyebrow">salle d'entraînement</p>
+      <h1 class="title">PHONE<span class="slash">/</span>SLICE</h1>
+      <p class="tagline">Ton téléphone est la lame. Ton écran est le dojo.</p>
+
+      <div class="pairing">
+        <div class="qr-card">
+          <div id="qrcode"></div>
+          <p class="qr-hint">Scanne avec ton téléphone</p>
+        </div>
+        <div class="or">ou</div>
+        <div class="code-card">
+          <p class="code-label">Ouvre <span id="controller-url" class="mono"></span><br>et entre le code</p>
+          <p id="room-code" class="room-code">····</p>
+        </div>
+      </div>
+
+      <p id="lobby-status" class="status">En attente de la lame…</p>
+      <button id="mouse-mode" class="ghost-btn">Jouer à la souris (test sans téléphone)</button>
+    </div>
+  </section>
+
+  <!-- ÉCRAN JEU -->
+  <canvas id="game" class="game hidden"></canvas>
+  <div id="hud" class="hud hidden">
+    <div class="hud-left">
+      <p class="hud-label">score</p>
+      <p id="score" class="hud-score">0</p>
+    </div>
+    <div class="hud-right">
+      <p id="combo" class="hud-combo"></p>
+      <p id="conn" class="hud-conn">● lame connectée</p>
+    </div>
+  </div>
+
+  <script src="js/desktop.js?v=corner-launch"></script>
+</body>
+</html>
