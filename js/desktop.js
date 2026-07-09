@@ -93,8 +93,8 @@
 
   // ── Pointeur-lame ─────────────────────────────────────────
   // Le téléphone est un pointeur laser : yaw/pitch relatifs → x/y écran.
-  const SPAN_X_DEG = 50; // amplitude horizontale couvrant l'écran
-  const SPAN_Y_DEG = 36;
+  const SPAN_X_DEG = 38; // amplitude horizontale couvrant l'écran
+  const SPAN_Y_DEG = 32;
 
   let ref = null;            // orientation de référence (recentrage)
   const target = { x: 0, y: 0 };
@@ -108,11 +108,16 @@
   function onControllerData(msg) {
     if (!msg || typeof msg !== "object") return;
     if (msg.t === "o") {
-      if (!ref) ref = { a: msg.a, b: msg.b };
-      const da = wrap180(msg.a - ref.a); // yaw : gauche/droite
+      if (!ref) ref = { a: msg.a, b: msg.b, g: msg.g };
+      const hasGamma = typeof msg.g === "number" && Number.isFinite(msg.g);
+      const da = hasGamma
+        ? msg.g - ref.g          // inclinaison gauche/droite : beaucoup plus réactive que la boussole
+        : wrap180(msg.a - ref.a);
       const db = msg.b - ref.b;          // pitch : haut/bas
-      target.x = W / 2 - (da / SPAN_X_DEG) * W;
+      target.x = W / 2 + (da / SPAN_X_DEG) * W;
       target.y = H / 2 - (db / SPAN_Y_DEG) * H;
+      target.x = Math.max(24, Math.min(W - 24, target.x));
+      target.y = Math.max(24, Math.min(H - 24, target.y));
     } else if (msg.t === "c") {
       ref = null; // le prochain paquet devient le nouveau centre
     }
@@ -291,8 +296,8 @@
 
     // lissage du pointeur + vitesse
     const px = blade.x, py = blade.y;
-    blade.x += (target.x - blade.x) * 0.45;
-    blade.y += (target.y - blade.y) * 0.45;
+    blade.x += (target.x - blade.x) * 0.78;
+    blade.y += (target.y - blade.y) * 0.78;
     blade.vx = blade.x - px;
     blade.vy = blade.y - py;
     blade.speed = Math.hypot(blade.vx, blade.vy);

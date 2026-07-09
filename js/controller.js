@@ -96,6 +96,10 @@
           return;
         }
       }
+      if (typeof DeviceMotionEvent !== "undefined" &&
+          typeof DeviceMotionEvent.requestPermission === "function") {
+        await DeviceMotionEvent.requestPermission();
+      }
       startStreaming();
     } catch (e) {
       permStatus.textContent = "Erreur capteurs : " + e.message;
@@ -114,9 +118,9 @@
         return;
       }
       const now = performance.now();
-      if (now - lastSend < 16) return; // ~60 Hz max
+      if (now - lastSend < 12) return; // ~80 Hz max si le navigateur le permet
       lastSend = now;
-      conn.send({ t: "o", a: e.alpha, b: e.beta, g: e.gamma });
+      conn.send({ t: "o", a: e.alpha, b: e.beta, g: e.gamma, ts: now });
       bladeVisual.style.transform =
         "rotate(" + (-e.gamma || 0) + "deg)";
     });
