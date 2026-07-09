@@ -1,0 +1,4 @@
+/input /.netlify/functions/input 200
+/api/input /.netlify/functions/input 200
+/new / 200
+

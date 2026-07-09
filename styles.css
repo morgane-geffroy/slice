@@ -1,0 +1,185 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #11140f;
+  color: #f7f1df;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.screen {
+  min-height: 100vh;
+  position: relative;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(248, 196, 72, 0.22), transparent 26rem),
+    linear-gradient(145deg, #13261c, #11140f 48%, #261915);
+}
+
+#game {
+  display: block;
+  height: 100vh;
+  width: 100vw;
+}
+
+.hud,
+.join {
+  position: fixed;
+  left: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  pointer-events: none;
+}
+
+.hud {
+  top: 20px;
+}
+
+.join {
+  bottom: 22px;
+  justify-content: center;
+  text-align: center;
+  color: rgba(247, 241, 223, 0.82);
+}
+
+.join p {
+  margin: 0;
+}
+
+.join strong {
+  color: #fff7c5;
+  overflow-wrap: anywhere;
+}
+
+.label {
+  color: rgba(247, 241, 223, 0.58);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+}
+
+.code,
+.score {
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+  margin: 0;
+}
+
+.controller-link {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  color: #fff7c5;
+  padding: 10px 14px;
+  pointer-events: auto;
+  text-decoration: none;
+}
+
+.controller-body {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(107, 205, 124, 0.22), transparent 18rem),
+    #121711;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.controller {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 18px;
+  min-height: 100vh;
+  padding: 22px;
+}
+
+.controller h1 {
+  font-size: 34px;
+  line-height: 1;
+  margin: 0 0 8px;
+}
+
+.controller p {
+  margin: 0;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+button {
+  appearance: none;
+  background: #f6d04d;
+  border: 0;
+  border-radius: 8px;
+  color: #241d0a;
+  font: inherit;
+  font-weight: 850;
+  min-height: 48px;
+  padding: 10px 12px;
+}
+
+button:last-child {
+  background: #9de36f;
+}
+
+.pad {
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  min-height: 48vh;
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+  user-select: none;
+}
+
+.pad p {
+  color: rgba(247, 241, 223, 0.56);
+  max-width: 220px;
+  text-align: center;
+}
+
+.blade-dot {
+  background: #f7f1df;
+  border-radius: 999px;
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.82);
+  height: 22px;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 22px;
+}
+
+.telemetry {
+  color: rgba(247, 241, 223, 0.72);
+  display: flex;
+  justify-content: space-between;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 700px) {
+  .hud {
+    left: 14px;
+    right: 14px;
+  }
+
+  .join {
+    display: none;
+  }
+}

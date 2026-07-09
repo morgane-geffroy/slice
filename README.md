@@ -45,3 +45,6 @@ Le repo contient aussi une configuration Netlify :
 
 Sur Netlify, la page racine fonctionne directement. Le jeu utilise un polling léger vers la fonction Netlify pour recevoir
 les gestes du téléphone, avec un contrôle tactile local en secours.
+
+Les fichiers statiques existent à la fois à la racine et dans `public/`. C'est volontaire : le site reste fonctionnel si
+Netlify publie `public/` via `netlify.toml`, ou si ses réglages d'interface publient encore la racine du repo.
