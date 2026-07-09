@@ -23,7 +23,7 @@ let width = 0;
 let height = 0;
 let score = 0;
 let input = { x: 0.5, y: 0.5, dx: 0, dy: 0, intensity: 0, mode: "idle", at: 0 };
-let blade = { x: 0, y: 0, px: 0, py: 0 };
+let blade = { x: 0, y: 0, px: 0, py: 0, remoteX: 0.5, remoteY: 0.5 };
 let fruits = [];
 let particles = [];
 let trail = [];
@@ -55,14 +55,35 @@ function connectInput() {
     return;
   }
 
+  const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws?session=${encodeURIComponent(session)}`);
+  ws.addEventListener("message", (event) => {
+    const message = JSON.parse(event.data);
+    if (message.event === "input") {
+      receiveInput(message.payload);
+    }
+  });
+  ws.addEventListener("open", () => {
+    input = { ...input, mode: "websocket", at: Date.now() };
+  });
+  ws.addEventListener("error", () => ws.close());
+  ws.addEventListener("close", () => connectSseInput());
+}
+
+function connectSseInput() {
   const source = new EventSource(`/events?session=${encodeURIComponent(session)}`);
   source.addEventListener("input", (event) => {
-    input = JSON.parse(event.data);
+    receiveInput(JSON.parse(event.data));
   });
   source.onerror = () => {
     source.close();
     startPollingInput();
   };
+}
+
+function receiveInput(nextInput) {
+  input = nextInput;
+  blade.remoteX = nextInput.x;
+  blade.remoteY = nextInput.y;
 }
 
 async function showShareableControllerUrl() {
@@ -138,8 +159,11 @@ function updateBlade() {
   const targetY = input.y * height;
   const previousX = blade.x;
   const previousY = blade.y;
-  blade.x += (targetX - blade.x) * 0.42;
-  blade.y += (targetY - blade.y) * 0.42;
+  const inputAge = input.at ? Math.min(80, Date.now() - input.at) : 0;
+  const predictedX = targetX + clamp(input.dx || 0, -1, 1) * inputAge * 2.1;
+  const predictedY = targetY + clamp(input.dy || 0, -1, 1) * inputAge * 2.1;
+  blade.x += (predictedX - blade.x) * 0.78;
+  blade.y += (predictedY - blade.y) * 0.78;
   const slashX = clamp(input.dx || 0, -1, 1) * width * 0.72;
   const slashY = clamp(input.dy || 0, -1, 1) * height * 0.72;
   const slashLength = Math.hypot(slashX, slashY);
@@ -151,7 +175,7 @@ function updateBlade() {
     blade.py = previousY;
   }
   const speed = Math.hypot(blade.x - blade.px, blade.y - blade.py);
-  const power = Math.min(1, speed / 55 + input.intensity * 0.75);
+  const power = Math.min(1, speed / 50 + input.intensity * 0.85);
   trail.push({ x: blade.x, y: blade.y, power, life: 1 });
   if (trail.length > 18) trail.shift();
 }

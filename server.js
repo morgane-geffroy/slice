@@ -12,6 +12,7 @@ function createSession() {
   sessions.set(id, {
     input: { x: 0.5, y: 0.5, dx: 0, dy: 0, intensity: 0, mode: "idle", at: Date.now() },
     clients: new Set(),
+    sockets: new Set(),
   });
   return id;
 }
@@ -33,6 +34,10 @@ function broadcast(id, event, payload) {
   if (!session) return;
   for (const client of session.clients) {
     sendSse(client, event, payload);
+  }
+  const message = JSON.stringify({ event, payload });
+  for (const socket of session.sockets) {
+    sendWs(socket, message);
   }
 }
 
@@ -121,17 +126,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    const input = {
-      x: clamp(Number(body.x), 0, 1, 0.5),
-      y: clamp(Number(body.y), 0, 1, 0.5),
-      dx: clamp(Number(body.dx), -1, 1, 0),
-      dy: clamp(Number(body.dy), -1, 1, 0),
-      intensity: clamp(Number(body.intensity), 0, 1, 0),
-      mode: String(body.mode || "motion").slice(0, 20),
-      at: Date.now(),
-    };
-    session.input = input;
-    broadcast(body.session, "input", input);
+    updateInput(body.session, body);
 
     res.writeHead(204);
     res.end();
@@ -174,6 +169,116 @@ const server = http.createServer(async (req, res) => {
   }
   serveFile(res, filePath);
 });
+
+server.on("upgrade", (req, socket) => {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  if (url.pathname !== "/ws") {
+    socket.destroy();
+    return;
+  }
+
+  const sessionId = url.searchParams.get("session");
+  const session = getSession(sessionId);
+  const key = req.headers["sec-websocket-key"];
+  if (!session || !key) {
+    socket.destroy();
+    return;
+  }
+
+  const accept = crypto
+    .createHash("sha1")
+    .update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`)
+    .digest("base64");
+  socket.write([
+    "HTTP/1.1 101 Switching Protocols",
+    "Upgrade: websocket",
+    "Connection: Upgrade",
+    `Sec-WebSocket-Accept: ${accept}`,
+    "",
+    "",
+  ].join("\r\n"));
+
+  socket.sessionId = sessionId;
+  session.sockets.add(socket);
+  sendWs(socket, JSON.stringify({ event: "input", payload: session.input }));
+  socket.on("data", (buffer) => {
+    for (const message of readWsMessages(buffer)) {
+      let payload;
+      try {
+        payload = JSON.parse(message);
+      } catch (error) {
+        continue;
+      }
+      updateInput(sessionId, payload);
+    }
+  });
+  socket.on("close", () => session.sockets.delete(socket));
+  socket.on("error", () => session.sockets.delete(socket));
+});
+
+function updateInput(sessionId, body) {
+  const session = getSession(sessionId);
+  if (!session) return;
+  const input = {
+    x: clamp(Number(body.x), 0, 1, 0.5),
+    y: clamp(Number(body.y), 0, 1, 0.5),
+    dx: clamp(Number(body.dx), -1, 1, 0),
+    dy: clamp(Number(body.dy), -1, 1, 0),
+    intensity: clamp(Number(body.intensity), 0, 1, 0),
+    mode: String(body.mode || "motion").slice(0, 20),
+    at: Date.now(),
+  };
+  session.input = input;
+  broadcast(sessionId, "input", input);
+}
+
+function sendWs(socket, message) {
+  if (socket.destroyed) return;
+  const payload = Buffer.from(message);
+  let header;
+  if (payload.length < 126) {
+    header = Buffer.from([0x81, payload.length]);
+  } else if (payload.length < 65536) {
+    header = Buffer.alloc(4);
+    header[0] = 0x81;
+    header[1] = 126;
+    header.writeUInt16BE(payload.length, 2);
+  } else {
+    return;
+  }
+  socket.write(Buffer.concat([header, payload]));
+}
+
+function readWsMessages(buffer) {
+  const messages = [];
+  let offset = 0;
+  while (offset + 6 <= buffer.length) {
+    const opcode = buffer[offset] & 0x0f;
+    const masked = Boolean(buffer[offset + 1] & 0x80);
+    let length = buffer[offset + 1] & 0x7f;
+    offset += 2;
+    if (length === 126) {
+      if (offset + 2 > buffer.length) break;
+      length = buffer.readUInt16BE(offset);
+      offset += 2;
+    } else if (length === 127) {
+      break;
+    }
+    if (!masked || offset + 4 + length > buffer.length) break;
+    const mask = buffer.subarray(offset, offset + 4);
+    offset += 4;
+    const payload = buffer.subarray(offset, offset + length);
+    offset += length;
+    if (opcode === 8) break;
+    if (opcode !== 1) continue;
+    const decoded = Buffer.alloc(payload.length);
+    for (let index = 0; index < payload.length; index += 1) {
+      decoded[index] = payload[index] ^ mask[index % 4];
+    }
+    messages.push(decoded.toString("utf8"));
+  }
+  return messages;
+}
 
 function clamp(value, min, max, fallback) {
   if (!Number.isFinite(value)) return fallback;

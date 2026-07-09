@@ -21,11 +21,14 @@ let latestOrientation = null;
 let latestMotion = null;
 let motionEnabled = false;
 let lastSent = 0;
+let socket = null;
+let socketReady = false;
 
 if (!session) {
   statusEl.textContent = "Session manquante. Ouvre le lien affiché sur l'écran.";
 } else {
   statusEl.textContent = `Session ${session}`;
+  connectSocket();
 }
 
 motionButton.addEventListener("click", enableMotion);
@@ -103,8 +106,8 @@ function updateMotion() {
   const gamma = latestOrientation.gamma || 0;
   const rawX = 0.5 + (gamma - baseline.gamma) / 70;
   const rawY = 0.5 + (beta - baseline.beta) / 90;
-  const nextX = state.x + (clamp(rawX, 0, 1) - state.x) * 0.34;
-  const nextY = state.y + (clamp(rawY, 0, 1) - state.y) * 0.34;
+  const nextX = state.x + (clamp(rawX, 0, 1) - state.x) * 0.52;
+  const nextY = state.y + (clamp(rawY, 0, 1) - state.y) * 0.52;
   const acceleration = latestMotion?.accelerationIncludingGravity;
   const rotation = latestMotion?.rotationRate;
   const accelMagnitude = acceleration
@@ -113,19 +116,36 @@ function updateMotion() {
   const rotationGamma = rotation?.gamma || 0;
   const rotationBeta = rotation?.beta || 0;
   const rotationAlpha = rotation?.alpha || 0;
-  const rotationPower = Math.min(1, Math.hypot(rotationAlpha, rotationBeta, rotationGamma) / 420);
-  const accelPower = Math.min(1, Math.max(0, accelMagnitude - 9.8) / 18);
-  const dx = clamp((nextX - state.x) * 5 + rotationGamma / 240, -1, 1);
-  const dy = clamp((nextY - state.y) * 5 + rotationBeta / 240, -1, 1);
+  const rotationPower = Math.min(1, Math.hypot(rotationAlpha, rotationBeta, rotationGamma) / 320);
+  const accelPower = Math.min(1, Math.max(0, accelMagnitude - 9.8) / 14);
+  const dx = clamp((nextX - state.x) * 6.5 + rotationGamma / 190, -1, 1);
+  const dy = clamp((nextY - state.y) * 6.5 + rotationBeta / 190, -1, 1);
 
   state = {
     x: nextX,
     y: nextY,
     dx,
     dy,
-    intensity: clamp(Math.hypot(dx, dy) * 0.8 + rotationPower * 0.7 + accelPower * 0.8, 0, 1),
+    intensity: clamp(Math.hypot(dx, dy) * 0.95 + rotationPower * 0.85 + accelPower * 0.9, 0, 1),
     mode: "motion",
   };
+}
+
+function connectSocket() {
+  if (location.protocol === "https:" && location.hostname.endsWith("netlify.app")) return;
+  socket = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws?session=${encodeURIComponent(session)}`);
+  socket.addEventListener("open", () => {
+    socketReady = true;
+    statusEl.textContent = `Session ${session} - direct`;
+  });
+  socket.addEventListener("close", () => {
+    socketReady = false;
+    setTimeout(connectSocket, 900);
+  });
+  socket.addEventListener("error", () => {
+    socketReady = false;
+    socket.close();
+  });
 }
 
 function renderController() {
@@ -138,13 +158,19 @@ function renderController() {
 function send() {
   if (!session) return;
   const now = performance.now();
-  if (now - lastSent < 28) return;
+  if (now - lastSent < (socketReady ? 14 : 28)) return;
   lastSent = now;
+  const payload = JSON.stringify({ session, ...state });
+
+  if (socketReady && socket?.readyState === WebSocket.OPEN) {
+    socket.send(payload);
+    return;
+  }
 
   fetch("/input", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ session, ...state }),
+    body: payload,
     keepalive: true,
   }).catch(() => {
     statusEl.textContent = "Connexion perdue.";
