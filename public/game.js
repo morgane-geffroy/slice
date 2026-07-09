@@ -55,7 +55,7 @@ canvas.addEventListener("pointerup", () => {
 });
 
 function connectInput() {
-  if (location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+  if (isNetlifyHost()) {
     startPollingInput();
     return;
   }
@@ -72,6 +72,10 @@ function connectInput() {
   });
   ws.addEventListener("error", () => ws.close());
   ws.addEventListener("close", () => connectSseInput());
+}
+
+function isNetlifyHost() {
+  return location.hostname.endsWith(".netlify.app") || location.hostname === "netlify.app";
 }
 
 function connectSseInput() {
