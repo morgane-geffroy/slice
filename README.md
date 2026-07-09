@@ -34,3 +34,14 @@ En HTTP local, le pavé tactile fonctionnera, mais le bouton capteurs peut être
 
 Pour une version démo publique vraiment gestuelle, mettre ce serveur derrière HTTPS, par exemple via un tunnel HTTPS
 ou un déploiement Node avec certificat valide.
+
+## Déploiement Netlify
+
+Le repo contient aussi une configuration Netlify :
+
+- `netlify.toml` publie le dossier `public/`.
+- `/input` et `/api/input` sont routés vers une fonction Netlify.
+- `/new` renvoie vers la page de jeu.
+
+Sur Netlify, la page racine fonctionne directement. Le jeu utilise un polling léger vers la fonction Netlify pour recevoir
+les gestes du téléphone, avec un contrôle tactile local en secours.

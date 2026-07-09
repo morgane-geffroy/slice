@@ -1,0 +1,19 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/input"
+  to = "/.netlify/functions/input"
+  status = 200
+
+[[redirects]]
+  from = "/api/input"
+  to = "/.netlify/functions/input"
+  status = 200
+
+[[redirects]]
+  from = "/new"
+  to = "/"
+  status = 200
+

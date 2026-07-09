@@ -1,7 +1,9 @@
 const params = new URLSearchParams(location.search);
-const session = params.get("session");
+let session = params.get("session");
 if (!session) {
-  location.href = "/new";
+  session = Math.random().toString(16).slice(2, 8).toUpperCase();
+  params.set("session", session);
+  history.replaceState(null, "", `${location.pathname}?${params}`);
 }
 
 const canvas = document.querySelector("#game");
@@ -19,7 +21,7 @@ controllerLink.href = controllerUrl;
 let width = 0;
 let height = 0;
 let score = 0;
-let input = { x: 0.5, y: 0.5, intensity: 0, mode: "idle", at: Date.now() };
+let input = { x: 0.5, y: 0.5, intensity: 0, mode: "idle", at: 0 };
 let blade = { x: 0, y: 0, px: 0, py: 0 };
 let fruits = [];
 let particles = [];
@@ -39,10 +41,58 @@ function resize() {
 addEventListener("resize", resize);
 resize();
 
-const source = new EventSource(`/events?session=${encodeURIComponent(session)}`);
-source.addEventListener("input", (event) => {
-  input = JSON.parse(event.data);
+connectInput();
+canvas.addEventListener("pointerdown", usePointer);
+canvas.addEventListener("pointermove", usePointer);
+canvas.addEventListener("pointerup", () => {
+  input = { ...input, intensity: 0, mode: "local", at: Date.now() };
 });
+
+function connectInput() {
+  if (location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+    startPollingInput();
+    return;
+  }
+
+  const source = new EventSource(`/events?session=${encodeURIComponent(session)}`);
+  source.addEventListener("input", (event) => {
+    input = JSON.parse(event.data);
+  });
+  source.onerror = () => {
+    source.close();
+    startPollingInput();
+  };
+}
+
+function startPollingInput() {
+  setInterval(async () => {
+    try {
+      const response = await fetch(`/api/input?session=${encodeURIComponent(session)}`, { cache: "no-store" });
+      if (response.ok) {
+        const nextInput = await response.json();
+        if (nextInput.at && nextInput.at >= input.at) {
+          input = nextInput;
+        }
+      }
+    } catch (error) {
+      // Pointer input remains available when there is no backend.
+    }
+  }, 45);
+}
+
+function usePointer(event) {
+  if (event.buttons === 0 && event.type !== "pointerdown") return;
+  const x = Math.max(0, Math.min(1, event.clientX / width));
+  const y = Math.max(0, Math.min(1, event.clientY / height));
+  const speed = Math.hypot(x - input.x, y - input.y);
+  input = {
+    x,
+    y,
+    intensity: Math.min(1, speed * 12),
+    mode: "local",
+    at: Date.now(),
+  };
+}
 
 function spawnFruit() {
   const radius = 28 + Math.random() * 22;
@@ -190,11 +240,11 @@ function drawBlade() {
 }
 
 function drawConnectionHint() {
-  if (Date.now() - input.at < 1200) return;
+  if (input.at && Date.now() - input.at < 1200) return;
   context.fillStyle = "rgba(247,241,223,0.62)";
   context.font = "700 18px system-ui";
   context.textAlign = "center";
-  context.fillText("Connecte le téléphone pour contrôler la lame", width / 2, height / 2);
+  context.fillText("Ouvre le lien téléphone ou tranche directement ici", width / 2, height / 2);
 }
 
 function distanceToSegment(px, py, ax, ay, bx, by) {
