@@ -127,14 +127,14 @@ function updateMotion() {
   const beta = latestOrientation.beta || 0;
   const gamma = latestOrientation.gamma || 0;
   const yaw = shortestAngle(alpha - baseline.alpha);
-  const pitch = beta - baseline.beta;
-  const roll = gamma - baseline.gamma;
-  const rawX = 0.5 - yaw / 42 - roll / 150;
-  const rawY = 0.5 + pitch / 38;
-  const targetX = clamp(rawX, 0, 1);
-  const targetY = clamp(rawY, 0, 1);
+  const pitch = shortestAngle(beta - baseline.beta);
+  const roll = shortestAngle(gamma - baseline.gamma);
+  const aimX = applyDeadZone((-yaw / 48) - (roll / 180), 0.012);
+  const aimY = applyDeadZone(pitch / 52, 0.012);
+  const targetX = clamp(0.5 + aimX, 0.03, 0.97);
+  const targetY = clamp(0.54 + aimY, 0.06, 0.94);
   const distance = Math.hypot(targetX - filtered.x, targetY - filtered.y);
-  const smoothing = clamp(0.16 + distance * 2.4, 0.18, 0.58);
+  const smoothing = clamp(0.10 + distance * 1.8, 0.12, 0.42);
   const nextX = filtered.x + (targetX - filtered.x) * smoothing;
   const nextY = filtered.y + (targetY - filtered.y) * smoothing;
   const measuredVx = (nextX - filtered.x) / dt;
@@ -156,8 +156,8 @@ function updateMotion() {
   const dx = clamp(filtered.vx * 0.18 + rotationAlpha / 260 + rotationGamma / 320, -1, 1);
   const dy = clamp(filtered.vy * 0.18 + rotationBeta / 260, -1, 1);
   const stillness = Math.hypot(filtered.vx, filtered.vy);
-  const stableX = stillness < 0.025 ? state.x + (nextX - state.x) * 0.12 : nextX;
-  const stableY = stillness < 0.025 ? state.y + (nextY - state.y) * 0.12 : nextY;
+  const stableX = stillness < 0.035 ? state.x + (nextX - state.x) * 0.08 : nextX;
+  const stableY = stillness < 0.035 ? state.y + (nextY - state.y) * 0.08 : nextY;
 
   state = {
     x: stableX,
@@ -235,6 +235,11 @@ function clamp(value, min, max) {
 
 function shortestAngle(value) {
   return ((value + 540) % 360) - 180;
+}
+
+function applyDeadZone(value, zone) {
+  if (Math.abs(value) <= zone) return 0;
+  return value > 0 ? value - zone : value + zone;
 }
 
 function tick() {

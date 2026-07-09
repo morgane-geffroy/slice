@@ -98,13 +98,26 @@ async function showShareableControllerUrl() {
     const response = await fetch(`/api/urls?session=${encodeURIComponent(session)}`, { cache: "no-store" });
     if (!response.ok) return;
     const data = await response.json();
-    const candidate = data.controller?.find((url) => !url.includes("localhost") && !url.includes("127.0.0.1"));
+    const candidate = pickReachableControllerUrl(data.controller || []);
     if (!candidate) return;
     phoneUrl.textContent = candidate;
     controllerLink.href = candidate;
   } catch (error) {
     // The localhost link remains useful on the same device.
   }
+}
+
+function pickReachableControllerUrl(urls) {
+  const privateIpv4 = urls.find((url) =>
+    /^http:\/\/(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(url)
+  );
+  if (privateIpv4) return privateIpv4;
+  return urls.find((url) =>
+    !url.includes("localhost") &&
+    !url.includes("127.0.0.1") &&
+    !url.includes("192.0.0.2") &&
+    !url.includes("[")
+  );
 }
 
 function startPollingInput() {
@@ -164,14 +177,14 @@ function updateBlade() {
   const targetY = input.y * height;
   const previousX = blade.x;
   const previousY = blade.y;
-  const inputAge = input.at ? Math.min(80, Date.now() - input.at) : 0;
-  const predictedX = targetX + clamp(input.dx || 0, -1, 1) * inputAge * 2.1;
-  const predictedY = targetY + clamp(input.dy || 0, -1, 1) * inputAge * 2.1;
-  const pull = input.intensity > 0.28 ? 0.62 : 0.34;
+  const inputAge = input.at ? Math.min(55, Date.now() - input.at) : 0;
+  const predictedX = targetX + clamp(input.dx || 0, -1, 1) * inputAge * 1.35;
+  const predictedY = targetY + clamp(input.dy || 0, -1, 1) * inputAge * 1.15;
+  const pull = input.intensity > 0.28 ? 0.42 : 0.24;
   blade.vx += (predictedX - blade.x) * pull;
   blade.vy += (predictedY - blade.y) * pull;
-  blade.vx *= 0.56;
-  blade.vy *= 0.56;
+  blade.vx *= 0.46;
+  blade.vy *= 0.46;
   blade.x += blade.vx;
   blade.y += blade.vy;
   const slashX = clamp(input.dx || 0, -1, 1) * width * 0.72;
