@@ -129,7 +129,7 @@ function updateMotion() {
   const yaw = shortestAngle(alpha - baseline.alpha);
   const pitch = beta - baseline.beta;
   const roll = gamma - baseline.gamma;
-  const rawX = 0.5 + yaw / 42 + roll / 150;
+  const rawX = 0.5 - yaw / 42 - roll / 150;
   const rawY = 0.5 + pitch / 38;
   const targetX = clamp(rawX, 0, 1);
   const targetY = clamp(rawY, 0, 1);
