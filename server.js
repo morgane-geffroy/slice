@@ -154,6 +154,18 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (url.pathname === "/api/urls") {
+    const sessionId = url.searchParams.get("session") || "";
+    const origins = localOrigins(port);
+    res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+    res.end(JSON.stringify({
+      session: sessionId,
+      game: origins.map((origin) => `${origin}/?session=${encodeURIComponent(sessionId)}`),
+      controller: origins.map((origin) => `${origin}/controller.html?session=${encodeURIComponent(sessionId)}`),
+    }));
+    return;
+  }
+
   let filePath = path.join(root, url.pathname === "/" ? "index.html" : url.pathname);
   if (!filePath.startsWith(root)) {
     res.writeHead(403);
@@ -169,15 +181,22 @@ function clamp(value, min, max, fallback) {
 }
 
 function localAddresses(port) {
-  const urls = [`http://localhost:${port}/new`];
+  return localOrigins(port).map((origin) => `${origin}/new`);
+}
+
+function localOrigins(port) {
+  const urls = [`http://localhost:${port}`];
   for (const interfaces of Object.values(os.networkInterfaces())) {
     for (const entry of interfaces || []) {
       if (entry.family === "IPv4" && !entry.internal) {
-        urls.push(`http://${entry.address}:${port}/new`);
+        urls.push(`http://${entry.address}:${port}`);
+      }
+      if (entry.family === "IPv6" && !entry.internal && !entry.address.startsWith("fe80:")) {
+        urls.push(`http://[${entry.address}]:${port}`);
       }
     }
   }
-  return urls;
+  return [...new Set(urls)];
 }
 
 const port = Number(process.env.PORT || 4177);

@@ -17,6 +17,7 @@ sessionCode.textContent = session;
 const controllerUrl = `${location.origin}/controller.html?session=${session}`;
 phoneUrl.textContent = controllerUrl;
 controllerLink.href = controllerUrl;
+showShareableControllerUrl();
 
 let width = 0;
 let height = 0;
@@ -62,6 +63,22 @@ function connectInput() {
     source.close();
     startPollingInput();
   };
+}
+
+async function showShareableControllerUrl() {
+  if (location.hostname !== "localhost" && location.hostname !== "127.0.0.1") return;
+
+  try {
+    const response = await fetch(`/api/urls?session=${encodeURIComponent(session)}`, { cache: "no-store" });
+    if (!response.ok) return;
+    const data = await response.json();
+    const candidate = data.controller?.find((url) => !url.includes("localhost") && !url.includes("127.0.0.1"));
+    if (!candidate) return;
+    phoneUrl.textContent = candidate;
+    controllerLink.href = candidate;
+  } catch (error) {
+    // The localhost link remains useful on the same device.
+  }
 }
 
 function startPollingInput() {
