@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fruit Saber</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="screen">
+      <canvas id="game" aria-label="Fruit Saber"></canvas>
+      <section class="hud">
+        <div>
+          <p class="label">Session</p>
+          <p id="sessionCode" class="code">------</p>
+        </div>
+        <div>
+          <p class="label">Score</p>
+          <p id="score" class="score">0</p>
+        </div>
+        <a id="controllerLink" class="controller-link" href="/controller.html">Téléphone</a>
+      </section>
+      <section class="join">
+        <p>Ouvre ce lien sur le téléphone :</p>
+        <strong id="phoneUrl"></strong>
+      </section>
+    </main>
+    <script src="/game.js"></script>
+  </body>
+</html>

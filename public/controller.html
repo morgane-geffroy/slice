@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Fruit Saber Controller</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="controller-body">
+    <main class="controller">
+      <header>
+        <p class="label">Contrôleur</p>
+        <h1>Fruit Saber</h1>
+        <p id="status">Connexion...</p>
+      </header>
+
+      <section class="controls">
+        <button id="motionButton" type="button">Activer les capteurs</button>
+        <button id="calibrateButton" type="button">Calibrer</button>
+      </section>
+
+      <section id="pad" class="pad" aria-label="Pavé de contrôle">
+        <div id="bladeDot" class="blade-dot"></div>
+        <p>Glisse ici si les capteurs ne sont pas disponibles.</p>
+      </section>
+
+      <section class="telemetry">
+        <span id="mode">idle</span>
+        <span id="coords">0.50 / 0.50</span>
+      </section>
+    </main>
+    <script src="/controller.js"></script>
+  </body>
+</html>

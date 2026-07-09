@@ -1,18 +1,36 @@
-# Slice
+# Fruit Saber Prototype
 
-Build web Godot basé sur [`ZDemeter/Shrunk_slice_test`](https://github.com/ZDemeter/Shrunk_slice_test).
+Prototype web autonome : un écran desktop affiche le jeu, un téléphone sert de contrôleur.
 
-## Déploiement Netlify
+## Lancer
 
-- Build command : laisser vide
-- Publish directory : `.`
+```bash
+node server.js
+```
 
-Le fichier `_headers` configure le type MIME du WASM et les en-têtes d'isolation nécessaires aux exports web Godot modernes.
+Puis ouvrir :
 
-## Fichiers principaux
+```text
+http://localhost:4177/new
+```
 
-- `index.html` : page de lancement Godot
-- `index.js` : runtime web Godot
-- `index.pck` : données du jeu
+Le jeu affiche un lien `controller.html?session=...` à ouvrir sur le téléphone.
+Le téléphone et l'ordinateur doivent être sur le même réseau local.
 
-Le moteur `index.wasm` est chargé depuis `https://zdemeter.github.io/Shrunk_slice_test/index.wasm`, car ce fichier fait environ 37 Mo.
+## Ce qui fonctionne
+
+- Jeu plein écran en Canvas.
+- Fruits lancés automatiquement.
+- Lame contrôlée en temps réel par le téléphone.
+- Connexion desktop/mobile par Server-Sent Events + POST HTTP, sans dépendance npm.
+- Contrôleur mobile avec deux modes :
+  - capteurs `DeviceOrientationEvent` / `DeviceMotionEvent` si le navigateur les autorise ;
+  - pavé tactile de secours, utilisable partout.
+
+## Note capteurs mobiles
+
+Sur iPhone et certains navigateurs Android, les capteurs de mouvement exigent un contexte sécurisé HTTPS.
+En HTTP local, le pavé tactile fonctionnera, mais le bouton capteurs peut être refusé par le navigateur.
+
+Pour une version démo publique vraiment gestuelle, mettre ce serveur derrière HTTPS, par exemple via un tunnel HTTPS
+ou un déploiement Node avec certificat valide.
