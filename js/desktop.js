@@ -20,6 +20,7 @@
   const connEl = document.getElementById("conn");
   const statusEl = document.getElementById("lobby-status");
   const qrEl = document.getElementById("qrcode");
+  const isLocalHost = ["localhost", "127.0.0.1", "::1"].includes(location.hostname);
 
   document.getElementById("room-code").textContent = roomCode;
 
@@ -30,7 +31,10 @@
     ? controllerUrl.host + controllerUrl.pathname
     : "controller.html";
 
-  if (typeof QRCode === "undefined") {
+  if (isLocalHost) {
+    qrEl.textContent = "local";
+    statusEl.textContent = "Test local OK à la souris. Pour le téléphone, déploie sur Netlify afin d'avoir une URL HTTPS.";
+  } else if (typeof QRCode === "undefined") {
     qrEl.textContent = "QR indisponible";
     statusEl.textContent = "Impossible de charger QRCode. Vérifie ta connexion internet.";
   } else {
@@ -56,7 +60,9 @@
   const peer = new Peer(peerId, { debug: 1 });
 
   peer.on("open", () => {
-    statusEl.textContent = "En attente de la lame…";
+    statusEl.textContent = isLocalHost
+      ? "Dojo prêt en local. Téléphone : utilise plutôt l'URL Netlify HTTPS."
+      : "Dojo prêt. En attente de la lame…";
   });
 
   peer.on("error", (err) => {

@@ -31,7 +31,7 @@
   }
 
   if (!window.isSecureContext) {
-    joinStatus.textContent = "Le téléphone doit ouvrir une URL HTTPS pour accéder aux capteurs.";
+    joinStatus.textContent = "HTTP local : connexion possible, mais les capteurs du téléphone demanderont HTTPS.";
   }
 
   // Code pré-rempli si on arrive par QR code
@@ -46,17 +46,12 @@
   });
 
   function join() {
-    if (!window.isSecureContext) {
-      joinStatus.textContent = "Le téléphone doit ouvrir une URL HTTPS. Déploie sur Netlify ou utilise un tunnel HTTPS.";
-      return;
-    }
-
     const code = codeInput.value.trim().toUpperCase();
     if (code.length !== 4) {
       joinStatus.textContent = "Le code fait 4 caractères.";
       return;
     }
-    joinStatus.textContent = "Connexion au dojo…";
+    joinStatus.textContent = "Connexion au dojo " + code + "…";
     joinBtn.disabled = true;
 
     const peer = new Peer({ debug: 1 });
@@ -85,7 +80,7 @@
       if (conn && conn.open) return;
       joinStatus.textContent = err && err.type
         ? "Connexion impossible : " + err.type
-        : "Dojo introuvable. Vérifie le code.";
+        : "Dojo introuvable. Garde l'écran ouvert sur le code " + code + " et évite localhost sur téléphone.";
       joinBtn.disabled = false;
     }
   }
