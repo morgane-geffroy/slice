@@ -48,3 +48,15 @@ les gestes du téléphone, avec un contrôle tactile local en secours.
 
 Les fichiers statiques existent à la fois à la racine et dans `public/`. C'est volontaire : le site reste fonctionnel si
 Netlify publie `public/` via `netlify.toml`, ou si ses réglages d'interface publient encore la racine du repo.
+
+## Déploiement Node recommandé
+
+Pour le contrôle téléphone en temps réel, utiliser un hébergement Node avec WebSocket est plus fiable que Netlify.
+
+Render peut déployer directement ce repo :
+
+- Build command : laisser vide
+- Start command : `npm start`
+- Runtime : Node 20+
+
+Le fichier `render.yaml` est inclus pour créer automatiquement un service web `slice-controller`.

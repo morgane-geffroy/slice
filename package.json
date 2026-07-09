@@ -1,0 +1,12 @@
+{
+  "name": "slice-controller",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Phone-controlled fruit slicing web prototype.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
